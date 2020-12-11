@@ -2,18 +2,19 @@ import React, { useState, useEffect } from "react";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
-import phonebook from "./services/phonebook"
+import phonebook from "./services/phonebook";
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: "Arto Hellas", number: "040-123456" },
-    { name: "Ada Lovelace", number: "39-44-5323523" },
-    { name: "Dan Abramov", number: "12-43-234345" },
-    { name: "Mary Poppendieck", number: "39-23-6423122" },
-  ]);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+
+  useEffect(() => {
+    phonebook.getAll().then((initialPerosns) => {
+      setPersons(initialPerosns);
+    });
+  }, []);
 
   const handleNameChange = (e) => {
     setNewName(e.target.value);
@@ -25,6 +26,10 @@ const App = () => {
 
   const showError = (errorMessage) => {
     alert(errorMessage);
+  };
+
+  const showMessage = (message) => {
+    return window.confirm(message) ? true : false;
   };
 
   const checkInput = () => {
@@ -48,22 +53,57 @@ const App = () => {
     return true;
   };
 
+  const checkUpdate = () => {
+    const person = persons.find((p) => p.name === newName);
+
+    if (!person) return false;
+    if (
+      !showMessage(
+        `${person.name} has alerady added to phonebook, replace the old number with a new one ?`
+      )
+    ) {
+      return false;
+    }
+    phonebook
+      .update(person.id, { ...person, number: newNumber })
+      .then((newData) => {
+        setPersons(persons.map((p) => (p.id === person.id ? newData : p)));
+        setNewName("");
+        setNewNumber("");
+      });
+
+    return true;
+  };
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
 
     if (!checkInput()) {
       return;
     }
-
+    if (checkUpdate()) {
+      return;
+    }
     const newPerson = { name: newName, number: newNumber };
 
-    setPersons(persons.concat(newPerson));
-    setNewName("");
-    setNewNumber("");
+    phonebook.create(newPerson).then((newPerson) => {
+      setPersons(persons.concat(newPerson));
+      setNewName("");
+      setNewNumber("");
+    });
   };
 
   const handleFilterChange = (e) => {
     setFilter(e.target.value);
+  };
+
+  const handleDel = (id) => {
+    const person = persons.find((p) => p.id === id);
+
+    if (!showMessage(`Delete ${person.name}`)) return;
+    phonebook.del(id).then(() => {
+      setPersons(persons.filter((p) => p.id !== id));
+    });
   };
 
   let filteredPersons = persons;
@@ -92,7 +132,7 @@ const App = () => {
 
       <h3>Numbers</h3>
 
-      <Persons persons={filteredPersons} />
+      <Persons persons={filteredPersons} onDel={handleDel} />
     </div>
   );
 };
