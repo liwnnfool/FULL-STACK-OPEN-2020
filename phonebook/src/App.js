@@ -9,11 +9,12 @@ const App = () => {
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
-
+// side effect
   useEffect(() => {
     phonebook.getAll().then((initialPerosns) => {
       setPersons(initialPerosns);
     });
+    // input -> setFilter -> getAll 
   }, []);
 
   const handleNameChange = (e) => {
@@ -121,7 +122,6 @@ const App = () => {
       <Filter filter={filter} handleFilterChange={handleFilterChange} />
 
       <h3>add a new</h3>
-
       <PersonForm
         name={newName}
         number={newNumber}
